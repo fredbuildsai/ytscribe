@@ -1,0 +1,30 @@
+# External context for the Allotrope AI trend (ys topics context). Every milestone needs a source URL; dates are the public announcement date.
+# Workshop timing rule (confirmed by the user, and by sources where noted): Spring workshops are in May/June, Fall workshops in October.
+workshops:                                 # event label -> month the workshop took place (assumption flagged in the output)
+  "2022 H2": "2022-10"
+  "2023 H1": "2023-05"
+  "2023 H2": "2023-10"
+  "2024 H1": "2024-05"                     # 15-17 May 2024, Ludwigshafen (PharmaLex event page)
+  "2024 H2": "2024-10"
+  "2025 H2": "2025-10"                     # Hercules, CA, hosted by Bio-Rad (Allotrope summary page)
+  "2026 H1": "2026-05"                     # 5-7 May 2026, Leiden (Allotrope quarterly update)
+  "2026 H2": "2026-10"                     # 7-9 Oct 2026, Rockville MD (Allotrope site); only 11 of ~22 sessions uploaded
+milestones:
+  - {date: "2022-11-30", kind: general, label: "ChatGPT launched (research preview)", source: "https://en.wikipedia.org/wiki/ChatGPT"}
+  - {date: "2023-03-14", kind: general, label: "GPT-4 released", source: "https://en.wikipedia.org/wiki/GPT-4"}
+  - {date: "2023-09-21", kind: lab, label: "Benchling 2023 State of Tech in Biopharma report: 59% of 300 R&D/IT respondents use AI/ML", source: "https://www.benchling.com/state-of-tech"}
+  - {date: "2023-11-01", kind: general, label: "Microsoft 365 Copilot generally available (announced 21 Sep)", source: "https://www.microsoft.com/en-us/microsoft-365/blog/2023/09/21/announcing-microsoft-365-copilot-general-availability/"}
+  - {date: "2023-11-06", kind: general, label: "OpenAI DevDay: GPT-4 Turbo, GPTs, Assistants API", source: "https://www.techrepublic.com/article/openai-dev-day-gpt4-turbo/"}
+  - {date: "2023-12-06", kind: general, label: "Google Gemini 1.0", source: "https://blog.google/technology/ai/google-gemini-ai/"}
+  - {date: "2023-12-20", kind: science, label: "Coscientist (Nature, 20 Dec): GPT-4-driven autonomous chemical research", source: "https://pmc.ncbi.nlm.nih.gov/articles/PMC10733136"}
+  - {date: "2024-10-09", kind: science, label: "Nobel Prize in Chemistry for AlphaFold2 and protein design (Baker, Hassabis, Jumper)", source: "https://alphagalileo.org/en-gb/Item-Display/ItemId/250899"}
+  - {date: "2024-11-25", kind: general, label: "Anthropic open-sources the Model Context Protocol (MCP)", source: "https://www.anthropic.com/news/model-context-protocol"}
+  - {date: "2025-02-19", kind: science, label: "Google AI co-scientist (multi-agent, Gemini 2.0)", source: "https://siliconangle.com/2025/02/19/google-researchers-develop-ai-co-scientist-based-gemini-2-0/"}
+  - {date: "2025-10-20", kind: lab, label: "Anthropic Claude for Life Sciences (Benchling connector via MCP, Agent Skills); Benchling-Anthropic partnership", source: "https://www.anthropic.com/news/claude-for-life-sciences"}
+allotrope_signals:                         # what Allotrope itself said or framed, with sources
+  - {date: "2024-05-15", label: "Spring 2024 workshop agenda framed around Generative AI, data-centricity and AI agents", source: "https://pharmalex.com/pharmalex-insights/events/2024-spring-allotrope-connect-workshop"}
+  - {date: "2025-10-15", label: "Fall 2025 summary: 'AI as an Augmented Semantic Engineer'; MCP for real-time orchestration", source: "https://allotropefoundation.org/summary-of-fall-2025-allotrope-connect/"}
+wikipedia: [ChatGPT, Artificial_intelligence, Large_language_model, Model_Context_Protocol]
+pubmed:                                    # queries counted by the date a record was ADDED to PubMed (avoids the 1-January artefact)
+  llm_all: '("large language model*"[tiab] OR ChatGPT[tiab] OR "generative AI"[tiab] OR "generative artificial intelligence"[tiab])'
+  llm_lab_science: '(("large language model*"[tiab] OR ChatGPT[tiab] OR "generative AI"[tiab]) AND (chemistry[tiab] OR laboratory[tiab] OR "drug discovery"[tiab] OR "chemical"[tiab]))'

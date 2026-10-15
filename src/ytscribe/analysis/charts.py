@@ -336,3 +336,78 @@ def tier_chart(ev: pd.DataFrame, out: Path, title: str, subtitle: str = "") -> P
     fig.savefig(out, dpi=170)
     plt.close(fig)
     return out
+
+
+def context_chart(allo: pd.DataFrame, wiki: pd.DataFrame, pubmed: pd.DataFrame, milestones: list[dict], out: Path,
+                  title: str, subtitle: str = "") -> Path:
+    """Stacked panels on ONE shared time axis (different units, so each panel has its own y scale): a strip with the numbered
+    milestones (staggered so clustered ones stay readable); Allotrope AI mentions per 10k words at the workshop months (hatched =
+    slide-only clips); Wikipedia pageviews (% of each page's own peak); PubMed records mentioning LLMs (% of current level).
+    Dotted verticals run through all panels. The milestone key is printed below."""
+    import matplotlib.dates as mdates
+
+    n = len(milestones)
+    H = 9.4 + 0.2 * n
+    fig = plt.figure(figsize=(9.6, H))
+    key_h = 0.55 + 0.19 * n  # inches reserved for the key
+    bottom = key_h / H
+    gs = fig.add_gridspec(4, 1, height_ratios=[0.32, 1.1, 1.0, 1.0], hspace=0.34, left=0.09, right=0.76, top=1 - 1.05 / H,
+                          bottom=bottom + 0.02)
+    strip, ax1, ax2, ax3 = [fig.add_subplot(gs[i]) for i in range(4)]
+    for ax in (ax1, ax2, ax3):
+        _style(ax)
+        ax.grid(axis="x", color=GRID, lw=0.5)
+    lo, hi = pd.Timestamp("2022-09-01"), pd.Timestamp("2026-12-31")
+    ymax = allo["rate"].max() * 1.3
+    for _, r in allo.iterrows():
+        ax1.bar(r["date"], r["rate"], width=38, facecolor=SURFACE if r["thin"] else SERIES[3], edgecolor=SERIES[3], lw=1.5,
+                hatch="////" if r["thin"] else None, zorder=3)
+        ax1.text(r["date"], r["rate"] + ymax * 0.02, f"{r['event']}\n{r['rate']:.0f}", ha="center", va="bottom", fontsize=7.5,
+                 color=INK, linespacing=1.15)
+    ax1.set_ylim(0, ymax)
+    ax1.set_title("Allotrope: AI mentions per 10k words, at the workshop month (hatched = slide-only video clips)", loc="left", fontsize=10,
+                  color=INK, pad=5)
+    for k, (col, label) in enumerate([("ChatGPT", "ChatGPT"), ("Artificial_intelligence", "Artificial intelligence"),
+                                      ("Model_Context_Protocol", "Model Context Protocol")]):
+        sr = wiki[col].dropna()
+        ax2.plot(sr.index, sr / sr.max() * 100, color=SERIES[k], lw=2)
+        ax2.annotate(label, (sr.index[-1], sr.iloc[-1] / sr.max() * 100), xytext=(6, [-8, 8, 0][k]), textcoords="offset points",
+                     va="center", fontsize=8.5, color=INK, annotation_clip=False)
+    ax2.set_ylim(0, 108)
+    ax2.set_ylabel("% of own peak", fontsize=8.5)
+    ax2.set_title("Public attention: monthly Wikipedia pageviews (English)", loc="left", fontsize=10, color=INK, pad=5)
+    for k, (col, label, dy) in enumerate([("llm_all", "LLM papers (all)", -9), ("llm_lab_science", "... lab / chem / drug", 9)]):
+        sr = pubmed[col].dropna()
+        idx = sr / sr.iloc[-6:].mean() * 100
+        ax3.plot(idx.index, idx, color=SERIES[k], lw=2)
+        ax3.annotate(label, (idx.index[-1], idx.iloc[-1]), xytext=(6, dy), textcoords="offset points", va="center", fontsize=8.5,
+                     color=INK, annotation_clip=False)
+    ax3.set_ylim(0, 128)
+    ax3.set_ylabel("% of current level", fontsize=8.5)
+    ax3.set_title("Scientific adoption: PubMed records added per month mentioning LLMs / ChatGPT / generative AI", loc="left",
+                  fontsize=10, color=INK, pad=5)
+    strip.set_ylim(0, 3.3)
+    strip.axis("off")
+    for i, m in enumerate(milestones, 1):
+        d = pd.Timestamp(m["date"])
+        for a in (ax1, ax2, ax3):
+            a.axvline(d, color=INK2, lw=0.8, ls=(0, (1, 3)), zorder=1)
+        y = 0.45 + (i % 3) * 0.95
+        strip.plot([d, d], [0, y - 0.25], color=INK2, lw=0.7, ls=(0, (1, 3)), clip_on=False)
+        strip.text(d, y, str(i), ha="center", va="center", fontsize=8, color=INK, weight="bold",
+                   bbox={"boxstyle": "circle,pad=0.25", "fc": SURFACE, "ec": INK2, "lw": 0.7})
+    for a in (strip, ax1, ax2, ax3):
+        a.set_xlim(lo, hi)
+    for a in (ax1, ax2, ax3):
+        a.xaxis.set_major_locator(mdates.MonthLocator(bymonth=[1, 7]))
+        a.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
+        a.tick_params(axis="x", labelsize=7.5)
+    kinds = {"general": "general AI", "science": "scientific AI", "lab": "lab / biopharma"}
+    key = "\n".join(f"{i:>2}  {m['date']}  [{kinds[m['kind']]}]  {m['label'][:108]}" for i, m in enumerate(milestones, 1))
+    fig.text(0.02, bottom - 0.005, "Milestones (sources in context_report.md)", fontsize=9, color=INK, va="top", weight="bold")
+    fig.text(0.02, bottom - 0.03, key, fontsize=7.2, color=INK2, va="top", family="DejaVu Sans Mono", linespacing=1.55)
+    fig.suptitle(title, x=0.02, y=1 - 0.12 / H, ha="left", fontsize=13, color=INK)
+    fig.text(0.02, 1 - 0.5 / H, subtitle, fontsize=8, color=INK2, va="top")
+    fig.savefig(out, dpi=170)
+    plt.close(fig)
+    return out

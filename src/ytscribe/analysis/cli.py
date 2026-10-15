@@ -228,3 +228,66 @@ def correlate_cmd(focus: str = typer.Option("AI / ML", help="Topic to report in 
                               out / "chart_corr_passages.png", "Which topics are interconnected? (passages)",
                               sub + " Above 1 = together more than chance, below 1 = less (0.50 = half the odds). – = too few shared passages expected (<3) to judge.")
     console.print(f"{p1}\n{p2}")
+
+
+@topics_app.command("context")
+def context_cmd(context_file: str = typer.Option("configs/topics/context_allotrope.yaml", "--context"),
+                topic: str = typer.Option("AI / ML"), refresh: bool = typer.Option(False, help="Re-download the external series"),
+                topics: str = CfgOpt):
+    """Was Allotrope early, on time or late on AI? Compare its AI trend with public attention (Wikipedia pageviews), scientific
+    adoption (PubMed) and dated milestones; writes the chart and a sourced report."""
+    import shutil
+
+    import regex
+
+    from ytscribe.analysis import context as cx
+
+    cfg, patterns, docs, counts = _prepare(topics)
+    ctx = cx.load_context(context_file)
+    cache = get_settings().data_dir / "external"
+    if refresh:
+        shutil.rmtree(cache, ignore_errors=True)
+    wiki = cx.fetch_wikipedia(ctx["wikipedia"], cache)
+    pub = cx.fetch_pubmed(ctx["pubmed"], cache)
+    ev = trends.by_event(counts, list(cfg.topics), cfg.min_words_solid, cfg.min_talks_solid, cfg.substantive_mentions)
+    # sensitivity: the narrow definition (generic AI terms only: no named products, companies or protocols)
+    narrow = regex.compile(f"(?:{cfg.topics[topic][0]})", regex.IGNORECASE | regex.BESTMATCH)
+    ev["rate_broad"] = ev[f"{topic} /10k"]
+    narrow_counts = {d.video_id: len(narrow.findall(d.text)) for d in docs}
+    tmp = counts.assign(narrow=counts.video_id.map(narrow_counts))
+    g = tmp.groupby("event")
+    ev["rate_narrow"] = ev["event"].map(g["narrow"].sum() / g["words"].sum() * 1e4)
+    months = ctx["workshops"]
+    allo = ev[ev.event.isin(months)].copy()
+    allo["date"] = allo["event"].map(lambda e: pd.Timestamp(months[e] + "-15"))
+    allo["rate"] = allo["rate_broad"]
+    allo = allo.reset_index(drop=True)
+
+    solid = allo[~allo["thin"] & (allo["event"] != "2026 H2")]  # 2026 H2: 11 of ~22 sessions uploaded, kept out of 'current level'
+    rows = []
+    cur_b, cur_n = solid["rate_broad"].iloc[-2:].mean(), solid["rate_narrow"].iloc[-2:].mean()
+    for pct in (10, 25, 50, 100):
+        row = {"reaches": f"{pct}% of current level"}
+        for name, s in (("Wikipedia: ChatGPT", wiki["ChatGPT"].dropna()), ("PubMed: LLM papers", pub["llm_all"].dropna()),
+                        ("PubMed: LLM + lab/chem/drug", pub["llm_lab_science"].dropna())):
+            d = cx.first_reach(cx.level_index(s), pct, smooth=3)
+            row[name] = f"{d:%b %Y}" if d is not None else "-"
+        for name, col, cur in (("Allotrope (broad AI)", "rate_broad", cur_b), ("Allotrope (generic AI terms only)", "rate_narrow", cur_n)):
+            hit = solid[solid[col] / cur * 100 >= pct]
+            row[name] = f"{hit['date'].iloc[0]:%b %Y} ({hit['event'].iloc[0]})" if len(hit) else "-"
+        rows.append(row)
+    lag = pd.DataFrame(rows)
+    out = _out()
+    lag.to_csv(out / "context_levels.csv", index=False)
+    chart = charts.context_chart(allo, wiki, pub, ctx["milestones"], out / "chart_context.png",
+                                 "Allotrope's AI trend against the outside world",
+                                 "Workshop months: Spring = May, Fall = October (user-confirmed rule). 'Current level' = mean of the last 6 months "
+                                 "(external) or of 2025 H2 and 2026 H1 (Allotrope).")
+    lines = ["# Allotrope AI trend vs external events", "", "## When does each curve reach a fraction of its current level?", "",
+             "\n".join(["| " + " | ".join(lag.columns) + " |", "|" + "---|" * len(lag.columns)] + ["| " + " | ".join(str(v) for v in r) + " |" for r in lag.to_numpy()]), "", "## Milestones and sources", ""]
+    lines += [f"{i}. {m['date']} [{m['kind']}] {m['label']}: {m['source']}" for i, m in enumerate(ctx["milestones"], 1)]
+    lines += ["", "## What Allotrope itself said", ""] + [f"- {s['date']}: {s['label']}: {s['source']}" for s in ctx.get("allotrope_signals", [])]
+    (out / "context_report.md").write_text("\n".join(lines))
+    _print(allo[["event", "date", "rate_broad", "rate_narrow", "thin"]].round(1), "Allotrope AI per 10k words by workshop (broad vs generic-terms-only)")
+    console.print(lag.to_string(index=False), markup=False)
+    console.print(f"wrote {chart} and {out / 'context_report.md'}", markup=False)
