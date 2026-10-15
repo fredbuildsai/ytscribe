@@ -185,3 +185,87 @@ def composition_chart(panels: list[dict], ev: pd.DataFrame, out: Path, title: st
     fig.savefig(out, dpi=170, bbox_inches="tight")
     plt.close(fig)
     return out
+
+
+def talk_share_chart(ev: pd.DataFrame, topics: list[str], out: Path, substantive: int = 3,
+                     title: str = "Share of talks mentioning each topic") -> Path:
+    """Portrait stack, one panel per topic, fixed 0-100% scale. Light bar = talks with ANY mention; solid bar = talks with at
+    least `substantive` mentions. Label = any-mention % and (talks mentioning / talks). Thin events are hatched."""
+    n = len(topics)
+    H = 2.3 * n + 1.6
+    fig, axes = plt.subplots(n, 1, figsize=(8.2, H), sharex=True, sharey=True)
+    axes = [axes] if n == 1 else list(axes)
+    events, thin, talks = list(ev["event"]), list(ev["thin"]), list(ev["talks"])
+    for k, (ax, name) in enumerate(zip(axes, topics, strict=False)):
+        color = SERIES[k % len(SERIES)]
+        any_, sub, nt = ev[f"{name} %talks"], ev[f"{name} %talks_sub"], ev[f"{name} n_talks"]
+        for i in range(len(events)):
+            if thin[i]:
+                ax.bar(i, any_[i], 0.62, facecolor=SURFACE, edgecolor=color, lw=1.5, hatch="////", zorder=2)
+            else:
+                ax.bar(i, any_[i], 0.62, color=color, alpha=0.38, zorder=2)
+                ax.bar(i, sub[i], 0.62, color=color, zorder=3)
+            if any_[i] > 0:
+                ax.text(i, any_[i] + 1.5, f"{any_[i]:.0f}%", ha="center", va="bottom", fontsize=7.5, color=INK)
+                ax.text(i, any_[i] + 13, f"{int(nt[i])}/{talks[i]}", ha="center", va="bottom", fontsize=6.3, color=INK2)
+        ax.set_title(name, loc="left", fontsize=11, color=INK, pad=4)
+        ax.set_ylim(0, 124)
+        ax.set_yticks([0, 25, 50, 75, 100], ["0%", "25%", "50%", "75%", "100%"])
+        _style(ax)
+    axes[-1].set_xticks(range(len(events)), ["\n".join([e.split(" ")[0], e.split(" ")[1] if " " in e else "", f"({t})"])
+                                             for e, t in zip(events, talks, strict=False)], fontsize=7.5)
+    fig.suptitle(title, x=0.02, y=1 - 0.12 / H, ha="left", fontsize=13, color=INK)
+    fig.text(0.02, 1 - 0.5 / H, f"Light bar = any mention; solid = {substantive}+ mentions. Label = any-mention %, then talks mentioning / talks.\n"
+             "Hatched = 1-2 talks or slide-only.", fontsize=8, color=INK2, va="top")
+    fig.tight_layout(rect=(0, 0, 1, 1 - 0.8 / H))
+    fig.savefig(out, dpi=170)
+    plt.close(fig)
+    return out
+
+
+def corr_heatmaps(panels: list[dict], out: Path, title: str, subtitle: str = "") -> Path:
+    """Portrait stack of square heatmaps. Each panel = {"title", "matrix", "q" (FDR-adjusted p matrix or None), "vmax"}.
+    Diverging colour: blue (negative) <-> grey midpoint <-> red (positive), equal arms; * q<0.05, ** q<0.01; the number
+    is the coefficient. Each panel has its own scale because the statistics differ (rho vs phi); the scale is stated."""
+    from matplotlib.colors import LinearSegmentedColormap
+
+    cmap = LinearSegmentedColormap.from_list("div", ["#2a78d6", "#f0efec", "#e34948"])
+    cmap.set_bad("#f3f2ee")  # masked cells (too little data): a flat pale cell, not a colour
+    n = len(panels)
+    size = max(len(panels[0]["matrix"]) * 0.74 + 2.6, 7.5)
+    fig, axes = plt.subplots(n, 1, figsize=(size + 1.6, (size + 0.2) * n + 1.0))
+    axes = [axes] if n == 1 else list(axes)
+    for ax, panel in zip(axes, panels, strict=False):
+        m = panel["matrix"]
+        q = panel.get("q")
+        vmax = panel.get("vmax", 1.0)
+        names = list(m.index)
+        labels = panel.get("labels", m)  # what is printed in a cell (may differ from the value that sets the colour)
+        im = ax.imshow(m.to_numpy(float), cmap=cmap, vmin=-vmax, vmax=vmax, aspect="equal")
+        for i in range(len(names)):
+            for j in range(len(names)):
+                v = m.iloc[i, j]
+                if i == j:
+                    continue
+                if pd.isna(v):
+                    ax.text(j, i, "–", ha="center", va="center", fontsize=9, color=INK2)  # too few data to judge
+                    continue
+                star = ""
+                if q is not None and not pd.isna(q.iloc[i, j]):
+                    star = "**" if q.iloc[i, j] < 0.01 else "*" if q.iloc[i, j] < 0.05 else ""
+                ax.text(j, i, f"{labels.iloc[i, j]:{panel.get('fmt', '.2f')}}{star}", ha="center", va="center", fontsize=7.5,
+                        color="white" if abs(v) > 0.6 * vmax else INK, fontweight="bold" if star else "normal")
+        ax.set_xticks(range(len(names)), [t[:22] for t in names], rotation=40, ha="right", fontsize=8)
+        ax.set_yticks(range(len(names)), [t[:22] for t in names], fontsize=8)
+        ax.set_title(panel["title"], loc="left", fontsize=10.5, color=INK, pad=8)
+        for sp in ax.spines.values():
+            sp.set_visible(False)
+        cb = fig.colorbar(im, ax=ax, fraction=0.035, pad=0.02)
+        cb.ax.tick_params(labelsize=7)
+        cb.set_label(panel.get("scale_label", ""), fontsize=7.5)
+    fig.suptitle(title, x=0.02, ha="left", fontsize=13, color=INK)
+    fig.text(0.02, 0.955, subtitle, fontsize=8, color=INK2, va="top")
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
+    fig.savefig(out, dpi=170, bbox_inches="tight")
+    plt.close(fig)
+    return out

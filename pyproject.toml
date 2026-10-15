@@ -22,7 +22,7 @@ dependencies = [
 [project.optional-dependencies]
 asr = ["mlx-whisper>=0.4"]
 mistral = ["mistralai>=1.9"]
-analysis = ["pandas>=2.2", "numpy>=1.26", "scipy>=1.13", "scikit-learn>=1.5", "ruptures>=1.1", "regex>=2024.5", "scattertext>=0.2", "matplotlib>=3.8", "rapidfuzz>=3.9"]
+analysis = ["pandas>=2.2", "numpy>=1.26", "scipy>=1.13", "statsmodels>=0.14", "scikit-learn>=1.5", "ruptures>=1.1", "regex>=2024.5", "scattertext>=0.2", "matplotlib>=3.8", "rapidfuzz>=3.9"]
 sentiment = ["vaderSentiment>=3.3"]
 topics = ["bertopic>=0.16", "sentence-transformers>=3"]
 slides = ["Pillow>=10", "imagehash>=4.3", "ocrmac>=1.0; sys_platform == 'darwin'"]

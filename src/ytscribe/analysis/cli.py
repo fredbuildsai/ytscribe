@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import typer
 from rich.console import Console
@@ -52,7 +53,7 @@ def trends_cmd(topics: str = CfgOpt):
     cfg, patterns, docs, counts = _prepare(topics)
     out = _out()
     names = list(cfg.topics)
-    ev = trends.by_event(counts, names, cfg.min_words_solid, cfg.min_talks_solid)
+    ev = trends.by_event(counts, names, cfg.min_words_solid, cfg.min_talks_solid, cfg.substantive_mentions)
     counts.to_csv(out / "topic_counts_by_video.csv", index=False)
     ev.to_csv(out / "topic_trends_by_event.csv", index=False)
     cps = trends.changepoints(ev, names)
@@ -97,12 +98,13 @@ def charts_cmd(projection: Path = typer.Option(None, help="projection_*.csv from
     """Direction, partners and AI/cloud charts."""
     cfg, _, _, counts = _prepare(topics)
     out = _out()
-    ev = trends.by_event(counts, list(cfg.topics), cfg.min_words_solid, cfg.min_talks_solid)
+    ev = trends.by_event(counts, list(cfg.topics), cfg.min_words_solid, cfg.min_talks_solid, cfg.substantive_mentions)
     proj = pd.read_csv(projection) if projection else None
     g = cfg.groups
     steps = trends.changepoints(ev, g["direction"])
     paths = [charts.stacked_chart(ev, g["direction"], out / "chart_direction.png", proj, projected_event, steps,
                                   title="From the format, to ASM, to AI")]
+    paths.append(charts.talk_share_chart(ev, g["direction"], out / "chart_talk_share.png", cfg.substantive_mentions))
     if "partners" in g:
         paths.append(charts.small_multiples(ev, g["partners"], out / "chart_partners.png",
                                             "Partners and standards bodies", ncols=2))
@@ -170,3 +172,59 @@ def breakdown_cmd(anchor: list[str] = typer.Option(None, "--anchor", help="Ancho
         path = charts.composition_chart(panels, ev_idx.reset_index(), out / f"chart_breakdown_{slug}.png",
                                         f"{name}: one topic, what it is made of")
         console.print(f"wrote {path}")
+
+
+@topics_app.command("correlate")
+def correlate_cmd(focus: str = typer.Option("AI / ML", help="Topic to report in detail"), topics: str = CfgOpt):
+    """Which topics are interconnected? Talk-level (pooled and within-event) and passage-level association."""
+    from ytscribe.analysis import association as assoc
+
+    cfg, patterns, docs, counts = _prepare(topics)
+    cc = cfg.correlation
+    wanted = [t for g in cc.groups for t in cfg.groups[g]]
+    pres = assoc.passage_presence(docs, patterns, wanted, cc.passage_words)
+    names, dropped = assoc.usable_topics(counts[~counts["slide_only"]], pres, wanted, cc.min_talks, cc.min_passages)
+    for t, nt, npas in dropped:
+        console.print(f"[yellow]left out[/yellow] {t}: only {nt} talks / {npas} passages mention it (need {cc.min_talks} / {cc.min_passages})")
+    out = _out()
+    rates = assoc.talk_rates(counts, names)
+    rho_p, p_p = assoc.spearman_matrix(rates, names, within_event=False)
+    rho_w, p_w = assoc.spearman_matrix(rates, names, within_event=True)
+    q_p, q_w = assoc.fdr_matrix(p_p), assoc.fdr_matrix(p_w)
+    ptab = assoc.passage_table(pres, names)
+    q_pass = assoc.matrix_from_table(ptab, names, "q_by_event")
+    rho_p.to_csv(out / "corr_talks_pooled.csv")
+    rho_w.to_csv(out / "corr_talks_within_event.csv")
+    ptab.to_csv(out / "assoc_passages.csv", index=False)
+    console.print(f"{len(rates)} talks in {rates['event'].nunique()} events, {len(pres)} passages, {len(names)} topics")
+
+    rows = []
+    for t in names:
+        if t == focus:
+            continue
+        lo_p, hi_p = assoc.bootstrap_ci(rates, focus, t, False, cc.bootstrap)
+        lo_w, hi_w = assoc.bootstrap_ci(rates, focus, t, True, cc.bootstrap)
+        r = ptab[((ptab.a == focus) & (ptab.b == t)) | ((ptab.a == t) & (ptab.b == focus))].iloc[0]
+        rows.append({"topic": t, "rho_pooled": rho_p.loc[focus, t], "ci_pooled": f"{lo_p:.2f}..{hi_p:.2f}",
+                     "rho_within_event": rho_w.loc[focus, t], "ci_within": f"{lo_w:.2f}..{hi_w:.2f}",
+                     "q_within": q_w.loc[focus, t], "passages_both": r.passages_both, "phi": r.phi, "lift": r.lift,
+                     "OR_by_event": r.odds_by_event, "OR_ci": f"{r.or_lo:.1f}..{r.or_hi:.1f}", "q_passage": r.q_by_event})
+    focus_df = pd.DataFrame(rows).sort_values("phi", ascending=False)
+    focus_df.to_csv(out / f"assoc_focus_{''.join(c if c.isalnum() else '_' for c in focus.lower()).strip('_')}.csv", index=False)
+    _print(focus_df, f"{focus} vs every other topic (rho = talk level, phi/OR = same 150-word passage; q = FDR-adjusted p)", 2)
+
+    sub = "Red = topics appear together, blue = one tends to replace the other. * q<0.05, ** q<0.01 (Benjamini-Hochberg over all pairs)."
+    p1 = charts.corr_heatmaps([
+        {"title": "Talk level, pooled across all events: Spearman rho of topic rates per 10k words", "matrix": rho_p, "q": q_p,
+         "scale_label": "Spearman rho"},
+        {"title": "Talk level, within event (each event's mean removed, so the time trend cannot drive it)", "matrix": rho_w,
+         "q": q_w, "scale_label": "Spearman rho"}], out / "chart_corr_talks.png", "Which topics are interconnected? (talks)", sub)
+    ok = ptab.assign(odds_ok=ptab["odds_by_event"].where(ptab["expected_both"] >= 3))  # need >= 3 expected shared passages
+    odds = assoc.matrix_from_table(ok, names, "odds_ok")
+    lor = np.log2(odds.astype(float).replace(0, np.nan)).clip(-3, 3)
+    p2 = charts.corr_heatmaps([{"title": f"Same {cc.passage_words}-word passage: odds of appearing together vs chance "
+                                         "(1 = no link; event-stratified)", "matrix": lor, "labels": odds, "fmt": ".2f", "q": q_pass,
+                                "vmax": 3.0, "scale_label": "log2 odds ratio (colour); the number shown is the odds ratio"}],
+                              out / "chart_corr_passages.png", "Which topics are interconnected? (passages)",
+                              sub + " Above 1 = together more than chance, below 1 = less (0.50 = half the odds). – = too few shared passages expected (<3) to judge.")
+    console.print(f"{p1}\n{p2}")

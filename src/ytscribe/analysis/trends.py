@@ -18,7 +18,8 @@ def topic_counts(docs: list[Doc], patterns: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def by_event(df: pd.DataFrame, topics: list[str], min_words: int = 1000, min_talks: int = 3) -> pd.DataFrame:
+def by_event(df: pd.DataFrame, topics: list[str], min_words: int = 1000, min_talks: int = 3,
+             substantive: int = 3) -> pd.DataFrame:
     """Per event: talks, words, and for each topic mentions per 10k words and % of talks mentioning it. `thin` marks
     events too small to trust (few talks / words) or mostly slide text: drawn hollow, left out of step fits."""
     g = df.groupby(["t", "event"], sort=True)
@@ -27,7 +28,9 @@ def by_event(df: pd.DataFrame, topics: list[str], min_words: int = 1000, min_tal
     out["thin"] = (out["talks"] < min_talks) | (out["words"] <= min_words) | out["slide_only"]
     for name in topics:
         out[f"{name} /10k"] = g[name].sum() / out["words"] * 1e4
-        out[f"{name} %talks"] = g[name].apply(lambda s: (s > 0).mean() * 100)
+        out[f"{name} %talks"] = g[name].apply(lambda s: (s > 0).mean() * 100)  # any mention
+        out[f"{name} %talks_sub"] = g[name].apply(lambda s: (s >= substantive).mean() * 100)  # substantive: >= N mentions
+        out[f"{name} n_talks"] = g[name].apply(lambda s: int((s > 0).sum()))
     return out.reset_index()
 
 

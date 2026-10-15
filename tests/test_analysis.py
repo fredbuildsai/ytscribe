@@ -162,3 +162,12 @@ def test_load_docs_labels_events_as_halves(session):
     session.flush()
     d = load_docs(session, CFG)[0]
     assert d.event == "2026 H2" and d.event_season == "Fall" and d.t == 2026.75
+
+
+def test_talk_share_has_any_and_substantive_readings():
+    big = "word " * 1500
+    rows = [("2020 H2", big + "AI", "captions:auto:en"), ("2020 H2", big + "AI AI AI AI", "captions:auto:en"),
+            ("2020 H2", big, "captions:auto:en"), ("2020 H2", big + "AI AI", "captions:auto:en")]
+    ev = trends.by_event(_counts(rows), ["AI / ML"], substantive=3).iloc[0]
+    assert ev["AI / ML %talks"] == 75.0 and ev["AI / ML n_talks"] == 3      # 3 of 4 talks mention AI at all
+    assert ev["AI / ML %talks_sub"] == 25.0                                   # only 1 of 4 has 3+ mentions

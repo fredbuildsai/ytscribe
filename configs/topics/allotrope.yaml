@@ -9,6 +9,7 @@ season_order: {Spring: 0.25, Fall: 0.75}    # position inside a year, for orderi
 season_labels: {Spring: H1, Fall: H2}       # how events are shown everywhere: "2026 H2" (first / second half of the year)
 min_words_solid: 1000                       # an event is 'thin' (plotted hollow, left out of step fits) if it has
 min_talks_solid: 3                          #   fewer words / fewer talks than these, or is mostly slide text
+substantive_mentions: 3                     # % of talks has two readings: any mention, and >= this many mentions (substantive)
 groups:
   direction: ["ADF (data format)", "Ontologies / semantics", "ASM (simple model)", "AI / ML"]
   partners: ["Pistoia Alliance", "OPC UA / LADS", "SiLA", "ISA-88 / 95", "IDMP", "FAIR"]
@@ -87,3 +88,9 @@ breakdown:                                 # what an anchor topic is made of (ys
         "AI, unspecified": ['.']
     "ASM (simple model)":
       terms: {}                            # one acronym: its structure shows in the context themes, not in sub-terms
+correlation:                               # ys topics correlate
+  groups: [direction, partners]            # topics to relate (union of these config groups)
+  min_talks: 8                             # drop a topic mentioned in fewer talks than this (no signal to correlate)
+  min_passages: 15                         # ... or in fewer ~150-word passages than this
+  passage_words: 150
+  bootstrap: 2000

@@ -36,17 +36,27 @@ class BreakdownCfg(BaseModel):
     anchors: dict[str, AnchorBreakdownCfg] = {}
 
 
+class CorrelationCfg(BaseModel):
+    groups: list[str] = ["direction", "partners"]
+    min_talks: int = 8
+    min_passages: int = 15
+    passage_words: int = 150
+    bootstrap: int = 2000
+
+
 class TopicsConfig(BaseModel):
     season_order: dict[str, float] = {"Spring": 0.25, "Fall": 0.75}
     season_labels: dict[str, str] = {"Spring": "H1", "Fall": "H2"}  # how events are shown: "2026 H2"
     min_words_solid: int = 1000
     min_talks_solid: int = 3
+    substantive_mentions: int = 3  # a talk 'substantively' covers a topic from this many mentions up
     groups: dict[str, list[str]] = {}
     topics: dict[str, list[str]] = {}
     terms: TermsCfg = TermsCfg()
     projection: ProjectionCfg = ProjectionCfg()
     sentiment: SentimentCfg = SentimentCfg()
     breakdown: BreakdownCfg = BreakdownCfg()
+    correlation: CorrelationCfg = CorrelationCfg()
 
 
 def load_topics(path: Path | str | None = None) -> TopicsConfig:
