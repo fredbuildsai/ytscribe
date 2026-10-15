@@ -291,3 +291,47 @@ def context_cmd(context_file: str = typer.Option("configs/topics/context_allotro
     _print(allo[["event", "date", "rate_broad", "rate_narrow", "thin"]].round(1), "Allotrope AI per 10k words by workshop (broad vs generic-terms-only)")
     console.print(lag.to_string(index=False), markup=False)
     console.print(f"wrote {chart} and {out / 'context_report.md'}", markup=False)
+
+
+
+@topics_app.command("context-lag")
+def context_lag_cmd(context_file: str = typer.Option("configs/topics/context_allotrope.yaml", "--context"),
+                    topic: str = typer.Option("AI / ML"), lags: list[int] = typer.Option([3, 6], "--lag", help="Months of work before the talk"),
+                    topics: str = CfgOpt):
+    """Sensitivity: if a talk reports work done N months before it, shift Allotrope's series earlier by N and recompute how far
+    behind / ahead of the outside world it is. Writes ONLY new files (context_work_lag.*); the `context` outputs are never touched."""
+    from ytscribe.analysis import context as cx
+
+    cfg, patterns, docs, counts = _prepare(topics)
+    ctx = cx.load_context(context_file)
+    cache = get_settings().data_dir / "external"
+    wiki, pub = cx.fetch_wikipedia(ctx["wikipedia"], cache), cx.fetch_pubmed(ctx["pubmed"], cache)
+    ev = trends.by_event(counts, list(cfg.topics), cfg.min_words_solid, cfg.min_talks_solid, cfg.substantive_mentions)
+    allo = ev[ev.event.isin(ctx["workshops"])].copy()
+    allo["date"] = allo["event"].map(lambda e: pd.Timestamp(ctx["workshops"][e] + "-15"))
+    solid = allo[~allo["thin"] & (allo["event"] != "2026 H2")].reset_index(drop=True)
+    cur = solid[f"{topic} /10k"].iloc[-2:].mean()
+    rows = []
+    for k in lags:
+        for pct in (10, 25, 50):
+            hit = solid[solid[f"{topic} /10k"] / cur * 100 >= pct]
+            d0 = hit["date"].iloc[0] if len(hit) else None
+            row = {"work done ~ (months before talk)": k, "reaches": f"{pct}%",
+                   "talk (workshop)": f"{d0:%b %Y} ({hit['event'].iloc[0]})" if d0 is not None else "-",
+                   "work done (shifted)": f"{d0 - pd.DateOffset(months=k):%b %Y}" if d0 is not None else "-"}
+            for name, ser in (("PubMed LLM papers", pub["llm_all"].dropna()), ("PubMed lab/chem/drug", pub["llm_lab_science"].dropna()),
+                              ("ChatGPT attention", wiki["ChatGPT"].dropna())):
+                dd = cx.first_reach(cx.level_index(ser), pct, smooth=3)
+                row[f"months after {name}"] = cx.months_between(d0 - pd.DateOffset(months=k), dd) if d0 is not None and dd is not None else None
+            rows.append(row)
+    df = pd.DataFrame(rows)
+    out = _out()
+    df.to_csv(out / "context_work_lag.csv", index=False)
+    md = ["# Allotrope AI trend: if talks report work done N months earlier", "",
+          "Allotrope's dates are shifted EARLIER by N months; 'months after X' = shifted Allotrope crossing minus X's crossing "
+          "(positive = Allotrope later). Same 'current level' definitions as `context_report.md`, which is unchanged.", "",
+          "\n".join(["| " + " | ".join(df.columns) + " |", "|" + "---|" * len(df.columns)] +
+                    ["| " + " | ".join(str(v) for v in r) + " |" for r in df.to_numpy()])]
+    (out / "context_work_lag.md").write_text("\n".join(md))
+    console.print(df.to_string(index=False), markup=False)
+    console.print(f"wrote {out / 'context_work_lag.csv'} and {out / 'context_work_lag.md'}", markup=False)
