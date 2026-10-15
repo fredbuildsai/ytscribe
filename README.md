@@ -41,7 +41,7 @@ Requirements: Python 3.11–3.12, [uv](https://docs.astral.sh/uv/), `ffmpeg`. Ap
 ```bash
 git clone https://github.com/fredbuildsai/ytscribe && cd ytscribe
 uv sync --extra dev --extra analysis        # core + analysis; see "Extras" below
-uv run pytest -q                            # 78 tests
+uv run pytest -q                            # 78 tests (2 need the optional `llm` extra and are skipped without it)
 
 uv run ys add https://www.youtube.com/playlist?list=<ID>   # or: configs/sources/allotrope.yaml
 uv run ys fetch --limit 3                   # captions first, ASR fallback
