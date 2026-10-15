@@ -59,4 +59,4 @@ ignore = ["E501", "B008"]
 allow-direct-references = true
 
 [tool.uv.sources]
-llmrouter-free = { path = "../llmrouter-free", editable = true }   # sibling checkout (~/code/llmrouter-free)
+llmrouter-free = { git = "https://github.com/fredbuildsai/llmrouter-free", tag = "v0.1.0" }

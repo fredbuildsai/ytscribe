@@ -52,7 +52,7 @@ Outputs: `data/ytscribe.db` (SQLite), `data/transcripts/<video_id>/{meta.json,tr
 
 **Extras** (`uv sync --extra …`): `asr` (mlx-whisper), `mistral`, `slides` (Pillow, imagehash, ocrmac), `analysis` (pandas, scikit-learn, ruptures, scattertext, statsmodels, rapidfuzz, matplotlib), `sentiment` (VADER), `topics` (BERTopic, sentence-transformers; pulls in torch), `llm` (see below), `dev`.
 
-**LLM layer.** `ys llm …` uses [llmrouter-free](https://github.com/fredbuildsai/llmrouter-free) (free-tier cloud models first, local Ollama as fallback). It is referenced as a sibling checkout: `git clone https://github.com/fredbuildsai/llmrouter-free ../llmrouter-free`, then `uv sync --extra llm`. Put `OPENROUTER_API_KEY` in `.env` (git-ignored), or point `YS_LLM_ENV_FILE` at an existing `.env`; only that one variable is ever read from it. Without a cloud key it falls back to a local Ollama model.
+**LLM layer.** `ys llm …` uses [llmrouter-free](https://github.com/fredbuildsai/llmrouter-free) (free-tier cloud models first, local Ollama as fallback), installed from its GitHub tag with `uv sync --extra llm`. Put `OPENROUTER_API_KEY` in `.env` (git-ignored), or point `YS_LLM_ENV_FILE` at an existing `.env`; only that one variable is ever read from it. Without a cloud key it falls back to a local Ollama model. Without the `llm` or `analysis` extras, `ys` still works and `ys llm` / `ys topics` tell you what to install.
 
 ## Configuration
 

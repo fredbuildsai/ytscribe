@@ -1112,7 +1112,7 @@ wheels = [
 [[package]]
 name = "llmrouter-free"
 version = "0.1.0"
-source = { editable = "../llmrouter-free" }
+source = { git = "https://github.com/fredbuildsai/llmrouter-free?tag=v0.1.0#ebf035b5e892689d5db0d1699c08eac3f1763a6f" }
 dependencies = [
     { name = "litellm" },
     { name = "pydantic" },
@@ -1122,20 +1122,6 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "typer" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "litellm", specifier = ">=1.40" },
-    { name = "pydantic", specifier = ">=2.7" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.2" },
-    { name = "python-dotenv", specifier = ">=1.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "rich", specifier = ">=13.7" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5" },
-    { name = "sqlalchemy", specifier = ">=2.0" },
-    { name = "typer", specifier = ">=0.12" },
-]
-provides-extras = ["dev"]
 
 [[package]]
 name = "llvmlite"
@@ -3368,7 +3354,7 @@ topics = [
 requires-dist = [
     { name = "bertopic", marker = "extra == 'topics'", specifier = ">=0.16" },
     { name = "imagehash", marker = "extra == 'slides'", specifier = ">=4.3" },
-    { name = "llmrouter-free", marker = "extra == 'llm'", editable = "../llmrouter-free" },
+    { name = "llmrouter-free", marker = "extra == 'llm'", git = "https://github.com/fredbuildsai/llmrouter-free?tag=v0.1.0" },
     { name = "loguru", specifier = ">=0.7" },
     { name = "matplotlib", marker = "extra == 'analysis'", specifier = ">=3.8" },
     { name = "mistralai", marker = "extra == 'mistral'", specifier = ">=1.9" },
