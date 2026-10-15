@@ -1,0 +1,70 @@
+# Topic lexicons for the Allotrope Connect corpus. Matching uses the `regex` module (Python `re` syntax + fuzzy matching).
+# RULES
+#  - Neutral terms only (names, acronyms, technologies): no subjective words ("hard", "easy", "powerful"...). Tone is
+#    measured separately by `ys topics sentiment` on the text around each mention, so the two cannot contaminate each other.
+#  - Patterns are case-insensitive by default; use (?-i:...) to force case ("AI" vs the word "ai").
+#  - YouTube auto-captions garble names ("Pistoia" -> "pistolia", "pistoria", "pistol alliance"; "ChatGPT" -> "chat gbt"),
+#    so names use fuzzy matching: (?:pistoia){e<=1} allows 1 edit. Verified on the corpus 2026-10-15.
+season_order: {Spring: 0.25, Fall: 0.75}    # position inside a year, for ordering events
+min_words_solid: 1000                       # an event is 'thin' (plotted hollow, left out of step fits) if it has
+min_talks_solid: 3                          #   fewer words / fewer talks than these, or is mostly slide text
+groups:
+  direction: ["ADF (data format)", "Ontologies / semantics", "ASM (simple model)", "AI / ML"]
+  partners: ["Pistoia Alliance", "OPC UA / LADS", "SiLA", "ISA-88 / 95", "IDMP", "FAIR"]
+  ai_cloud: ["Anthropic (company)", "Claude (AI)", "OpenAI (company)", "ChatGPT / GPT (AI)", "AWS (cloud)", "Amazon (other)",
+             "Microsoft / Azure (cloud)", "Copilot (AI)", "Google (company)", "Gemini (AI)", "MCP (protocol)"]
+topics:
+  "ADF (data format)":
+    - '\bADF\b|\bHDF ?5\b|allotrope data format|\bdata cubes?\b|\bdata packages?\b'
+  "Ontologies / semantics":
+    - '\bontolog\w*|\bAFO\b|\bRDF\b|\bOWL\b|\bSHACL\b|\bSPARQL\b|triple ?stores?|knowledge graphs?|semantic web|linked data|\btaxonom\w*'
+  "ASM (simple model)":
+    - '\bASM\b|\bsimple models?\b'
+  "AI / ML":
+    - '(?-i:\bAI\b)|artificial intelligence|machine learning|deep learning|\bLLMs?\b|large language models?|\bchat ?GPT\b|(?-i:\bGPT\b)|generative|agentic|\bcopilot\b|foundation models?|neural networks?|natural language processing|(?-i:\bNLP\b)'
+  "Pistoia Alliance":
+    - '\b(?:pistoia){e<=1}\b'                                   # pistolia, pistoria, pistoya
+    - '\bpist\w{0,5}(?= alliance| airlines?| allian)'            # 'pistol alliance', 'pisto airlines': only before 'alliance'
+  "OPC UA / LADS":
+    - '\bOPC[- ]?UAS?\b|\bopca\b|\bLADS\b|laboratory and analytical device|lab(oratory)? analytical devices?|\bSPECTARIS\b|\bspectorus\b'
+  "SiLA":
+    - '(?-i:\bSiLA\b)'
+  "ISA-88 / 95":
+    - '\bISA[- ]?(88|95)\b'
+  "IDMP":
+    - '\bIDMP\b'
+  "FAIR":
+    - '(?-i:\bFAIR\b)|\bfair (data|principles)\b'
+  "Anthropic (company)":
+    - '\banthropic\b|\bantropic\b'
+  "Claude (AI)":
+    - '(?<!jean-)\bclaude\b'             # 'jean-claude' is a person
+  "OpenAI (company)":
+    - '\bopen ?AI\b'
+  "ChatGPT / GPT (AI)":
+    - '\bchat ?g(pt|bt|pd)\w*|\bg(pt|bt|pd)[- ]?\d\w*|(?-i:\bGPT\b)'   # captions: 'chat gbt', 'chat GPD40'
+  "AWS (cloud)":
+    - '(?-i:\bAWS\b)|amazon web services?'
+  "Amazon (other)":
+    - '\bamazon\b(?! web service)'
+  "Microsoft / Azure (cloud)":
+    - '\bmicrosoft\b|\bazure\b'
+  "Copilot (AI)":
+    - '\bcopilot\b'
+  "Google (company)":
+    - '\bgoogle\b'
+  "Gemini (AI)":
+    - '\bgemini\b'
+  "MCP (protocol)":
+    - '(?-i:\bMCP\b)'
+terms:                                     # distinctive-term analysis (Fightin' Words log-odds)
+  extra_stopwords: [uh, um, yeah, okay, gonna, going, know, like, just, kind, sort, really, thing, things, lot, think, want, need, got, let, say, said, make, right, mean, actually, thank, thanks, slide, slides, next, talk, today, hello, welcome, good, great, "yes", bit, way, use, using, used, come, look, see, time, work, working, people, allotrope, foundation, presentation, session, question, questions, morning, afternoon]
+  prior_sigma: 10.0
+  top: 15
+projection:                                # first year (as year+season fraction) a topic's baseline is representative
+  era_start: {"ADF (data format)": 2023.0, "ASM (simple model)": 2021.5, "AI / ML": 2024.5}
+  minutes_default: 30
+  minutes_panel: 45
+  bootstrap: 500
+sentiment:
+  window_words: 30                         # words either side of a topic mention

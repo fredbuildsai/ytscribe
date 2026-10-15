@@ -1,0 +1,32 @@
+# transcript_policy: reuse = use captions if any, else ASR | verify = captions + ASR sample overlap check | always_asr
+transcript_policy: reuse
+language: en
+captions:
+  prefer_manual: true
+  languages: [en, en-US, en-GB, en-orig]   # tried in order
+  api_fallback: true                        # youtube-transcript-api if the yt-dlp caption fetch fails
+verify_minutes: 10
+asr:
+  backend: whisper          # whisper (local, default) | mistral (API, needs MISTRAL_API_KEY)
+  quant: q4                 # local models only: q4 | q8
+  chunk_s: 600
+  mistral:
+    model: voxtral-mini-latest
+    diarize: false
+ytdlp:
+  auto_update: true         # on extractor failure: upgrade yt-dlp, reload, retry once per run
+  sleep_between_videos_s: 3
+  retries: 3
+  cookies_from_browser: null   # e.g. chrome; off by default
+keep_audio: false
+min_free_disk_gb: 5
+slides:                     # slide-only videos: distinct frames -> OCR text, stored as the transcript
+  auto: true                # triggered when the transcript is low-content (see quality.py)
+  fps: 1
+  hash_size: 16
+  same_thresh: 8
+  dup_thresh: 12
+  min_run_s: 2
+  max_height: 720
+  ocr_min_conf: 0.3
+  keep_video: false

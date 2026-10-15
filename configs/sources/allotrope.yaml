@@ -1,0 +1,5 @@
+# Allotrope Foundation channel: every "Allotrope Connect" workshop playlist (2017 to 2026 Fall)
+name: allotrope-connect
+channel: https://www.youtube.com/@AllotropeFoundation
+playlist_title_regex: "Allotrope Connect"
+include_channel_videos: false   # true = also add channel uploads that are in no matching playlist
