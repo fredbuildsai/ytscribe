@@ -69,7 +69,7 @@ Outputs: `data/ytscribe.db` (SQLite), `data/transcripts/<video_id>/{meta.json,tr
 
 ## Example application: Allotrope Connect
 
-The first use case: all 17 "Allotrope Connect" workshop playlists on the Allotrope Foundation channel. 146 videos registered; **145 transcribed** (about 53 hours, 0.5 million words); 1 is private. Of the 145: 135 from auto-captions, 5 with Whisper (4 speech, 1 mixed), 5 slide-only videos read with OCR.
+The first use case: all 17 "Allotrope Connect" workshop playlists on the [Allotrope Foundation YouTube channel](https://www.youtube.com/@AllotropeFoundation) ([all playlists](https://www.youtube.com/@AllotropeFoundation/playlists); the Foundation's site is [allotropefoundation.org](https://allotropefoundation.org/)). 146 videos registered; **145 transcribed** (about 53 hours, 0.5 million words); 1 is private. Of the 145: 135 from auto-captions, 5 with Whisper (4 speech, 1 mixed), 5 slide-only videos read with OCR.
 
 The question: **how do the content and direction of the discussions evolve, and where does AI fit?**
 
@@ -110,6 +110,16 @@ The first LLM pass (whole talk) **over-claimed**: it labelled 40 of the 85 talks
 Against public attention (Wikipedia pageviews) and scientific adoption (PubMed records mentioning LLMs), with dated, sourced milestones: **late** against public attention, **roughly on time** with the lab-and-biopharma wave, and **quick** to react to concrete lab-AI products (MCP, Claude for Life Sciences). A 3–6 month "work done before the talk" sensitivity is in `ys topics context-lag`.
 
 These are results of one worked example, with the limits below.
+
+### Talks mentioned above
+
+The videos belong to their speakers and the Allotrope Foundation; they are linked here, not copied.
+
+- [Allotrope 101](https://www.youtube.com/watch?v=ua9ySHL9hnQ) (2017), an early "AI needs data" framing.
+- [Benchling Welcome Address](https://www.youtube.com/watch?v=CCl9zjsOUPU) (2023 H2), where the October 2023 AI mentions come from: Benchling's own survey results.
+- [Bio-Rad keynote: The Lab OS We've Been Waiting For](https://www.youtube.com/watch?v=43zD71Cx1WE) and [AI-assisted JSON Schema Creation and Mapping](https://www.youtube.com/watch?v=DfS6PgMr1q0) (both 2025 H2): the two talks that carry the 2025 H2 AI spike.
+- [AI in Data Standard Research at NIST](https://www.youtube.com/watch?v=Otu5oth-a7w) (2026 H1): the talk with the most passages where AI and ontologies are explicitly related.
+- [Maximizing AI leverage with reusable Skills and MCP servers](https://www.youtube.com/watch?v=niEnqV3gyt8) and [Connecting Standards for the Lab of the Future](https://www.youtube.com/watch?v=1MxW4qotKH4) (both 2026 H1).
 
 ---
 
