@@ -30,6 +30,7 @@ def reply(connection="ontology_supports_ai", quote="enable grounding for AI agen
 
 
 def test_validator_rejects_an_unsupported_connection_and_inconsistent_answers():
+    pytest.importorskip("llmrouter_free")  # optional sibling dependency (see README)
     v = lk.make_validator(TRANSCRIPT)
     assert v(reply()).connection == "ontology_supports_ai"
     with pytest.raises(ValueError, match="verifies"):
@@ -52,6 +53,7 @@ class FakeRouter:
 
 
 def test_assess_talk_sends_only_the_transcript_and_records_prompt_version_and_verified_quotes():
+    pytest.importorskip("llmrouter_free")
     r = FakeRouter([reply()])
     out = lk.assess_talk(r, doc(), scope="both")
     msgs = r.calls[0][1]

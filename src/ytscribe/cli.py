@@ -9,8 +9,6 @@ from rich.table import Table
 from sqlalchemy import func, select
 
 from ytscribe import ytdlp_runner as yt
-from ytscribe.analysis.cli import topics_app
-from ytscribe.analysis.llm.cli import llm_app
 from ytscribe.db.models import Segment, Source, Video, VideoSource
 from ytscribe.db.session import get_session, init_db
 from ytscribe.export import export_video, write_catalog
@@ -21,8 +19,26 @@ from ytscribe.settings import get_settings, load_config, load_env
 from ytscribe.sources.resolve import event_from_title, expand_source_file, playlist_id, resolve
 
 app = typer.Typer(help="Get transcripts for YouTube videos, playlists and channels.", no_args_is_help=True)
-app.add_typer(topics_app, name="topics")
-app.add_typer(llm_app, name="llm")
+
+
+def _optional(name: str, module: str, attr: str, extra: str) -> None:
+    """Register a sub-app whose dependencies are an optional extra; without them `ys <name>` explains how to install them."""
+    try:
+        app.add_typer(getattr(__import__(module, fromlist=[attr]), attr), name=name)
+    except ImportError as e:
+        missing = e.name  # `e` is deleted when the except block ends, so keep what the stub needs
+        stub = typer.Typer(help=f"Needs the '{extra}' extra: uv sync --extra {extra}  ({missing} is missing)")
+
+        @stub.callback(invoke_without_command=True)
+        def _missing():
+            console.print(f"`ys {name}` needs the '{extra}' extra: uv sync --extra {extra}  ({missing} is missing)")
+            raise typer.Exit(1)
+
+        app.add_typer(stub, name=name)
+
+
+_optional("topics", "ytscribe.analysis.cli", "topics_app", "analysis")
+_optional("llm", "ytscribe.analysis.llm.cli", "llm_app", "llm")
 console = Console()
 
 
