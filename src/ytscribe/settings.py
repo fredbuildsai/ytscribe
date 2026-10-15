@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     configs_dir: Path = PROJECT_ROOT / "configs"
     database_url: str = ""
     log_level: str = "INFO"
+    llm_env_file: str = ""  # a .env that already holds provider keys (e.g. a sibling project's); only LLM_KEY_NAMES are read
 
     @property
     def db_url(self) -> str:

@@ -25,6 +25,9 @@ deployments:
 routes:
   annotate: [openrouter-nemotron-super, ollama-qwen35-9b]   # per-talk structured record
   stance:   [openrouter-nemotron-super, ollama-qwen35-9b]   # stance toward ontologies / ADF / ASM / AI
+  link:     [openrouter-nemotron-super, ollama-qwen35-9b]   # does the speaker connect two topics? (focused question)
+  judge_cloud: [openrouter-nemotron-super]   # single-deployment routes: each judge model is forced, never silently swapped
+  judge_local: [ollama-qwen35-9b]
   gold_alt: [ollama-qwen35-9b, openrouter-nemotron-super]   # a second opinion from a different model family, for gold drafts
 
 cooldown:

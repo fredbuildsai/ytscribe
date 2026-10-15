@@ -44,6 +44,13 @@ class CorrelationCfg(BaseModel):
     bootstrap: int = 2000
 
 
+class LinkCfg(BaseModel):
+    a_topic: str = "AI / ML"
+    b_topic: str = "Ontologies / semantics"
+    b_extra: list[str] = []
+    window_words: int = 60
+
+
 class TopicsConfig(BaseModel):
     season_order: dict[str, float] = {"Spring": 0.25, "Fall": 0.75}
     season_labels: dict[str, str] = {"Spring": "H1", "Fall": "H2"}  # how events are shown: "2026 H2"
@@ -57,6 +64,7 @@ class TopicsConfig(BaseModel):
     sentiment: SentimentCfg = SentimentCfg()
     breakdown: BreakdownCfg = BreakdownCfg()
     correlation: CorrelationCfg = CorrelationCfg()
+    link: LinkCfg = LinkCfg()
 
 
 def load_topics(path: Path | str | None = None) -> TopicsConfig:

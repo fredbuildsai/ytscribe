@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 
 from ytscribe import ytdlp_runner as yt
 from ytscribe.analysis.cli import topics_app
+from ytscribe.analysis.llm.cli import llm_app
 from ytscribe.db.models import Segment, Source, Video, VideoSource
 from ytscribe.db.session import get_session, init_db
 from ytscribe.export import export_video, write_catalog
@@ -21,6 +22,7 @@ from ytscribe.sources.resolve import event_from_title, expand_source_file, playl
 
 app = typer.Typer(help="Get transcripts for YouTube videos, playlists and channels.", no_args_is_help=True)
 app.add_typer(topics_app, name="topics")
+app.add_typer(llm_app, name="llm")
 console = Console()
 
 

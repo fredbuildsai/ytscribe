@@ -269,3 +269,70 @@ def corr_heatmaps(panels: list[dict], out: Path, title: str, subtitle: str = "")
     fig.savefig(out, dpi=170, bbox_inches="tight")
     plt.close(fig)
     return out
+
+
+def link_chart(ev: pd.DataFrame, out: Path, title: str, subtitle: str = "") -> Path:
+    """Stacked bars per event: % of ALL the event's talks by the LLM's connection answer. Colours: the three connection types
+    (fixed categorical order), grey = both topics present but not related ('parallel'). Talks without both topics are the blank
+    remainder up to 100%. Label above a bar = % connected (n)."""
+    cols = [("ontology_supports_ai", "Ontology supports AI", CATEGORICAL8[0]), ("ai_supports_ontology", "AI supports ontology", CATEGORICAL8[1]),
+            ("other_link", "Other explicit link", CATEGORICAL8[2]), ("parallel", "Both present, not related", NEUTRAL)]
+    fig, ax = plt.subplots(figsize=(10.5, 5.6))
+    events, thin = list(ev["event"]), list(ev["thin"]) if "thin" in ev else [False] * len(ev)
+    bottoms = [0.0] * len(ev)
+    handles = []
+    for key, label, color in cols:
+        vals = (ev[key] / ev["talks"] * 100).tolist()
+        for i, v in enumerate(vals):
+            if v > 0:
+                ax.bar(i, v, 0.62, bottom=bottoms[i], color=color, edgecolor=SURFACE, lw=1.0, zorder=2,
+                       hatch="////" if thin[i] else None)
+        handles.append(matplotlib.patches.Patch(facecolor=color, label=label))
+        bottoms = [b + v for b, v in zip(bottoms, vals, strict=False)]
+    for i, _e in enumerate(events):
+        n, tot = int(ev.loc[i, "connected"]), int(ev.loc[i, "talks"])
+        ax.text(i, bottoms[i] + 1.5, f"{ev.loc[i, 'pct_connected']:.0f}%\n({n}/{tot})", ha="center", va="bottom", fontsize=7.5, color=INK)
+    ax.set_xticks(range(len(events)), ["\n".join([e.split(" ")[0], e.split(" ")[1] if " " in e else ""]) for e in events], fontsize=8)
+    ax.set_ylim(0, max(bottoms + [20]) * 1.2)
+    ax.set_ylabel("% of the event's talks")
+    ax.legend(handles=handles, loc="upper left", frameon=False, fontsize=8.5, ncol=2)
+    fig.suptitle(title, x=0.02, ha="left", fontsize=13, color=INK)
+    fig.text(0.02, 0.925, subtitle, fontsize=8.5, color=INK2, va="top")
+    _style(ax)
+    fig.tight_layout(rect=(0, 0, 1, 0.9))
+    fig.savefig(out, dpi=170)
+    plt.close(fig)
+    return out
+
+
+def tier_chart(ev: pd.DataFrame, out: Path, title: str, subtitle: str = "") -> Path:
+    """Stacked bars: % of each event's talks by strength of evidence that the speaker relates AI and ontologies."""
+    cols = [("explicit_both_agree", "Explicit: both models confirm the passage", CATEGORICAL8[0]),
+            ("explicit_models_disagree", "Explicit candidate: models disagree", CATEGORICAL8[3]),
+            ("implied_only", "Implied only (whole-talk pass, no confirmed passage)", NEUTRAL)]
+    fig, ax = plt.subplots(figsize=(10.5, 5.8))
+    events = list(ev["event"])
+    bottoms = [0.0] * len(events)
+    handles = []
+    thin = list(ev["thin"]) if "thin" in ev else [False] * len(events)
+    for key, label, color in cols:
+        vals = (ev[key] / ev["talks"] * 100).tolist()
+        for i, v in enumerate(vals):
+            if v > 0:
+                ax.bar(i, v, 0.62, bottom=bottoms[i], color=color, edgecolor=SURFACE, lw=1.0, zorder=2, hatch="////" if thin[i] else None)
+        handles.append(matplotlib.patches.Patch(facecolor=color, label=label))
+        bottoms = [b + v for b, v in zip(bottoms, vals, strict=False)]
+    for i in range(len(events)):
+        ax.text(i, bottoms[i] + 1.2, f"{int(ev.loc[i, 'explicit_both_agree'])}/{int(ev.loc[i, 'talks'])}", ha="center", va="bottom",
+                fontsize=7.5, color=INK)
+    ax.set_xticks(range(len(events)), ["\n".join([e.split(" ")[0], e.split(" ")[1] if " " in e else ""]) for e in events], fontsize=8)
+    ax.set_ylim(0, max(bottoms + [20]) * 1.22)
+    ax.set_ylabel("% of the event's talks")
+    ax.legend(handles=handles, loc="upper left", frameon=False, fontsize=8.5)
+    fig.suptitle(title, x=0.02, ha="left", fontsize=13, color=INK)
+    fig.text(0.02, 0.925, subtitle, fontsize=8.5, color=INK2, va="top")
+    _style(ax)
+    fig.tight_layout(rect=(0, 0, 1, 0.9))
+    fig.savefig(out, dpi=170)
+    plt.close(fig)
+    return out

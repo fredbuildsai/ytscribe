@@ -94,3 +94,8 @@ correlation:                               # ys topics correlate
   min_passages: 15                         # ... or in fewer ~150-word passages than this
   passage_words: 150
   bootstrap: 2000
+link:                                      # ys llm link-judge: passages where both topics appear close together
+  a_topic: "AI / ML"
+  b_topic: "Ontologies / semantics"
+  b_extra: ['\bsemantic\w*', 'knowledge (model|base)s?', 'metadata model']   # wider than the topic lexicon, for candidate recall
+  window_words: 60                         # words either side of an A mention; B must appear inside this window

@@ -24,6 +24,7 @@ asr = ["mlx-whisper>=0.4"]
 mistral = ["mistralai>=1.9"]
 analysis = ["pandas>=2.2", "numpy>=1.26", "scipy>=1.13", "statsmodels>=0.14", "scikit-learn>=1.5", "ruptures>=1.1", "regex>=2024.5", "scattertext>=0.2", "matplotlib>=3.8", "rapidfuzz>=3.9"]
 sentiment = ["vaderSentiment>=3.3"]
+llm = ["llmrouter-free"]
 topics = ["bertopic>=0.16", "sentence-transformers>=3"]
 slides = ["Pillow>=10", "imagehash>=4.3", "ocrmac>=1.0; sys_platform == 'darwin'"]
 dev = ["pytest>=8.2", "ruff>=0.5"]
@@ -53,3 +54,9 @@ ignore = ["E501", "B008"]
 [tool.ruff.lint.per-file-ignores]
 # dated spikes kept as evidence of how the first numbers were produced, not product code
 "scripts/*" = ["E741", "B007", "E402", "B905"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.uv.sources]
+llmrouter-free = { path = "../llmrouter-free", editable = true }   # sibling checkout (~/code/llmrouter-free)
