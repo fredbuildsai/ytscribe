@@ -6,6 +6,7 @@
 #  - YouTube auto-captions garble names ("Pistoia" -> "pistolia", "pistoria", "pistol alliance"; "ChatGPT" -> "chat gbt"),
 #    so names use fuzzy matching: (?:pistoia){e<=1} allows 1 edit. Verified on the corpus 2026-10-15.
 season_order: {Spring: 0.25, Fall: 0.75}    # position inside a year, for ordering events
+season_labels: {Spring: H1, Fall: H2}       # how events are shown everywhere: "2026 H2" (first / second half of the year)
 min_words_solid: 1000                       # an event is 'thin' (plotted hollow, left out of step fits) if it has
 min_talks_solid: 3                          #   fewer words / fewer talks than these, or is mostly slide text
 groups:
@@ -21,7 +22,9 @@ topics:
   "ASM (simple model)":
     - '\bASM\b|\bsimple models?\b'
   "AI / ML":
-    - '(?-i:\bAI\b)|artificial intelligence|machine learning|deep learning|\bLLMs?\b|large language models?|\bchat ?GPT\b|(?-i:\bGPT\b)|generative|agentic|\bcopilot\b|foundation models?|neural networks?|natural language processing|(?-i:\bNLP\b)'
+    # one topic, made of many parts: generic AI terms + named AI products, companies and protocols (see `breakdown` below)
+    - '(?-i:\bAI\b)|artificial intelligence|machine learning|deep learning|\bLLMs?\b|large language models?|generative|agentic|foundation models?|neural networks?|natural language processing|(?-i:\bNLP\b)'
+    - '\bchat ?g(pt|bt|pd)\w*|(?-i:\bGPT\b)|\bopen ?AI\b|\bcopilot\b|\bgemini\b|(?<!jean-)\bclaude\b|\banthropic\b|\bantropic\b|(?-i:\bMCP\b)'
   "Pistoia Alliance":
     - '\b(?:pistoia){e<=1}\b'                                   # pistolia, pistoria, pistoya
     - '\bpist\w{0,5}(?= alliance| airlines?| allian)'            # 'pistol alliance', 'pisto airlines': only before 'alliance'
@@ -58,7 +61,7 @@ topics:
   "MCP (protocol)":
     - '(?-i:\bMCP\b)'
 terms:                                     # distinctive-term analysis (Fightin' Words log-odds)
-  extra_stopwords: [uh, um, yeah, okay, gonna, going, know, like, just, kind, sort, really, thing, things, lot, think, want, need, got, let, say, said, make, right, mean, actually, thank, thanks, slide, slides, next, talk, today, hello, welcome, good, great, "yes", bit, way, use, using, used, come, look, see, time, work, working, people, allotrope, foundation, presentation, session, question, questions, morning, afternoon]
+  extra_stopwords: [uh, um, yeah, okay, gonna, going, know, like, just, kind, sort, really, thing, things, lot, think, want, need, got, let, say, said, make, right, mean, actually, thank, thanks, slide, slides, next, talk, today, hello, welcome, good, great, "yes", bit, way, use, using, used, come, look, see, time, work, working, people, gtgt, ill, weve, thats, theres, youre, lets, dont, doesnt, ive, cant, wont, theyre, allotrope, foundation, presentation, session, question, questions, morning, afternoon]
   prior_sigma: 10.0
   top: 15
 projection:                                # first year (as year+season fraction) a topic's baseline is representative
@@ -68,3 +71,19 @@ projection:                                # first year (as year+season fraction
   bootstrap: 500
 sentiment:
   window_words: 30                         # words either side of a topic mention
+breakdown:                                 # what an anchor topic is made of (ys topics breakdown)
+  window_words: 40                         # words either side of a mention that make up its "context"
+  min_topic_size: 10                       # smallest context theme (in mention windows)
+  nr_topics: 8                             # merge context themes down to about this many
+  anchors:
+    "AI / ML":
+      min_topic_size: 6                    # only ~300 spoken mentions: a smaller cluster than the default 10
+      terms:                               # first match wins; the last entry catches the rest, so the parts sum to the anchor
+        "Claude / Anthropic": ['(?<!jean-)\bclaude\b|\banthropic\b']
+        "ChatGPT / OpenAI": ['\bopen ?AI\b|\bchat ?g(pt|bt|pd)\w*|\bg(pt|bt|pd)[- ]?\d\w*|(?-i:\bGPT\b)']
+        "MCP / agentic": ['(?-i:\bMCP\b)|\bagentic\b']
+        "LLMs / generative": ['\bLLMs?\b|large language models?|generative|foundation models?']
+        "Machine learning / NLP": ['machine learning|deep learning|neural networks?|natural language processing|(?-i:\bNLP\b)']
+        "AI, unspecified": ['.']
+    "ASM (simple model)":
+      terms: {}                            # one acronym: its structure shows in the context themes, not in sub-terms

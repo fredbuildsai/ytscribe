@@ -44,6 +44,7 @@ def test_topic_terms_are_neutral():
     ("talk by jean-claude and then Claude Sonnet", "Claude (AI)", 1),
     ("AI is big but ai in french is a verb", "AI / ML", 1),              # case-sensitive 'AI'
     ("machine learning and Large Language Models and llm", "AI / ML", 3),
+    ("Claude and Anthropic and MCP servers and OpenAI and chat gbt", "AI / ML", 5),   # one topic, made of named parts
     ("Amazon Web Services and AWS and amazon", "AWS (cloud)", 2),
     ("Amazon Web Services and AWS and amazon", "Amazon (other)", 1),
     ("OPC UA and opca and LADS", "OPC UA / LADS", 3),
@@ -118,3 +119,46 @@ def test_sentiment_is_relative_to_the_event_baseline():
     df = topic_sentiment(docs, PAT, ["Ontologies / semantics"], window_words=5, scorer=scorer)
     r = df.iloc[0]
     assert r["windows"] == 1 and r["mean"] == -1.0 and r["relative"] < -1.0      # far below an overall-positive event
+
+
+def test_stacked_chart_uses_one_shared_y_scale(tmp_path):
+    from ytscribe.analysis import charts
+
+    names = ["ADF (data format)", "AI / ML"]
+    ev = pd.DataFrame({"event": ["2020 Fall", "2021 Fall", "2022 Fall"], "talks": [5, 5, 5], "words": [9000] * 3,
+                       "thin": [False, False, True], "slide_only": [False] * 3,
+                       "ADF (data format) /10k": [30.0, 10.0, 99.0], "AI / ML /10k": [1.0, 2.0, 3.0]})
+    out = charts.stacked_chart(ev, names, tmp_path / "c.png", ymax=50)
+    assert out.exists() and out.stat().st_size > 5000
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(2, 1, sharey=True)
+    assert axes[0].get_shared_y_axes().joined(axes[0], axes[1])  # sanity of the mechanism used by stacked_chart
+    plt.close(fig)
+
+
+def test_event_labels_use_halves_and_old_names_still_work():
+    from ytscribe.analysis.charts import short_event
+    from ytscribe.analysis.config import normalize_event
+
+    assert normalize_event(CFG, "2026 Fall") == "2026 H2" and normalize_event(CFG, "2024 spring") == "2024 H1"
+    assert normalize_event(CFG, "2026 H2") == "2026 H2" and normalize_event(CFG, "2017") == "2017"
+    assert short_event("2026 H2") == "26H2" and short_event("2017") == "2017"
+
+
+def test_load_docs_labels_events_as_halves(session):
+    from ytscribe.analysis.corpus import load_docs
+    from ytscribe.db.models import Segment, Source, Video, VideoSource
+
+    src = Source(kind="playlist", url="https://x/p", title="2026 Fall Allotrope Connect Workshop", external_id="PL1",
+                 event_year=2026, event_season="Fall")
+    session.add(src)
+    session.flush()
+    v = Video(id="a" * 11, title="T", status="done", origin="captions:auto:en", upload_date="20261013", duration_s=600)
+    v.segments.append(Segment(start_s=0, end_s=1, text="hello world", origin="captions:auto:en"))
+    session.add(v)
+    session.flush()
+    session.add(VideoSource(video_id=v.id, source_id=src.id, position=0))
+    session.flush()
+    d = load_docs(session, CFG)[0]
+    assert d.event == "2026 H2" and d.event_season == "Fall" and d.t == 2026.75

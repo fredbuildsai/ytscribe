@@ -1,0 +1,37 @@
+# LLM routes for the analysis layer. Free-tier cloud first (default), local quantized Ollama as the fallback (llmrouter-free).
+# Keys: put OPENROUTER_API_KEY in ~/code/ytscribe/.env. For the local deployment OLLAMA_API_KEY can be any non-empty value
+# (the router only uses it to decide the deployment is enabled), e.g. OLLAMA_API_KEY=ollama.
+# A deployment whose api_key_env is unset is skipped, so with no cloud key the local model answers.
+deployments:
+  - name: openrouter-nemotron-super
+    model: openrouter/nvidia/nemotron-3-super-120b-a12b:free
+    api_key_env: OPENROUTER_API_KEY
+    tier: free
+    family: nemotron
+    extra_body: {reasoning: {enabled: false}}
+    temperature: 0.2
+    tags: [strong, json]
+
+  - name: ollama-qwen35-9b
+    model: ollama_chat/qwen3.5:9b-q4          # local, quantized q4 (project rule: local models are always q4/q8)
+    api_key_env: OLLAMA_API_KEY
+    api_base: http://localhost:11434
+    tier: free
+    family: qwen
+    extra_body: {think: false, options: {num_ctx: 16384}}   # a long talk is ~11k tokens; ctx fixed so Ollama never reloads
+    temperature: 0.2
+    tags: [json, local]
+
+routes:
+  annotate: [openrouter-nemotron-super, ollama-qwen35-9b]   # per-talk structured record
+  stance:   [openrouter-nemotron-super, ollama-qwen35-9b]   # stance toward ontologies / ADF / ASM / AI
+  gold_alt: [ollama-qwen35-9b, openrouter-nemotron-super]   # a second opinion from a different model family, for gold drafts
+
+cooldown:
+  rate_limit_seconds: 60
+  daily_quota_seconds: 86400
+  error_seconds: 30
+max_attempts_per_call: 10
+max_attempts_per_deployment: 3
+max_cloud_attempts: 2
+request_timeout_seconds: 300

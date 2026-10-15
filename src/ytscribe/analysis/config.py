@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import yaml
@@ -23,8 +24,21 @@ class SentimentCfg(BaseModel):
     window_words: int = 30
 
 
+class AnchorBreakdownCfg(BaseModel):
+    terms: dict[str, list[str]] = {}
+    min_topic_size: int | None = None  # overrides breakdown.min_topic_size for this anchor
+
+
+class BreakdownCfg(BaseModel):
+    window_words: int = 40
+    min_topic_size: int = 10
+    nr_topics: int | None = 8
+    anchors: dict[str, AnchorBreakdownCfg] = {}
+
+
 class TopicsConfig(BaseModel):
     season_order: dict[str, float] = {"Spring": 0.25, "Fall": 0.75}
+    season_labels: dict[str, str] = {"Spring": "H1", "Fall": "H2"}  # how events are shown: "2026 H2"
     min_words_solid: int = 1000
     min_talks_solid: int = 3
     groups: dict[str, list[str]] = {}
@@ -32,8 +46,16 @@ class TopicsConfig(BaseModel):
     terms: TermsCfg = TermsCfg()
     projection: ProjectionCfg = ProjectionCfg()
     sentiment: SentimentCfg = SentimentCfg()
+    breakdown: BreakdownCfg = BreakdownCfg()
 
 
 def load_topics(path: Path | str | None = None) -> TopicsConfig:
     p = Path(path) if path else get_settings().configs_dir / "topics" / "allotrope.yaml"
     return TopicsConfig(**(yaml.safe_load(p.read_text()) or {}))
+
+
+def normalize_event(cfg: TopicsConfig, event: str) -> str:
+    """Accept either naming on the command line: "2026 Fall" and "2026 H2" both give the configured label."""
+    for season, label in cfg.season_labels.items():
+        event = re.sub(rf"\b{season}\b", label, event, flags=re.I)
+    return event.strip()

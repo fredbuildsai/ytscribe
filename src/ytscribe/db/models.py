@@ -109,3 +109,36 @@ class Frame(Base):
     ocr_conf: Mapped[float | None] = mapped_column(Float)
 
     video: Mapped[Video] = relationship(back_populates="frames")
+
+
+class Annotation(Base):
+    """One LLM (or other) structured annotation of a talk. Versioned by prompt so re-runs never overwrite history."""
+
+    __tablename__ = "annotations"
+    __table_args__ = (UniqueConstraint("video_id", "kind", "prompt_version", "model"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    video_id: Mapped[str] = mapped_column(ForeignKey("videos.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(32))  # talk
+    prompt_version: Mapped[str] = mapped_column(String(32))
+    deployment: Mapped[str] = mapped_column(String(64))
+    model: Mapped[str] = mapped_column(String(128))
+    data: Mapped[dict] = mapped_column(JSON)
+    verified_ratio: Mapped[float | None] = mapped_column(Float)  # share of evidence quotes found in the transcript
+    taxonomy_version: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class GoldLabel(Base):
+    """A human-chosen label for one field of one item: the reference the LLM and the baselines are scored against."""
+
+    __tablename__ = "gold_labels"
+    __table_args__ = (UniqueConstraint("item_id", "field"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    item_id: Mapped[str] = mapped_column(String(64), index=True)
+    video_id: Mapped[str] = mapped_column(ForeignKey("videos.id", ondelete="CASCADE"), index=True)
+    field: Mapped[str] = mapped_column(String(32))
+    value: Mapped[str] = mapped_column(String(128))
+    note: Mapped[str | None] = mapped_column(Text)
+    labeled_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
