@@ -1,0 +1,23 @@
+# Proposed grouping of the 46 discovered BERTopic themes (T00-T45) into 17 categories. This is a judgement call made by reading each theme's
+# top terms and example talks; it is the INPUT to `ys llm taxonomy-proposal`, which writes the file you edit and approve.
+categories:
+  - {id: C01, suggested_label: "ADF files, data cubes and storage", themes: [T02, T36, T44, T16]}
+  - {id: C02, suggested_label: "ASM schema, validation and certification", themes: [T00, T07]}
+  - {id: C03, suggested_label: "Converters and ASM generation pipelines", themes: [T06, T29]}
+  - {id: C04, suggested_label: "Instrument integration and lab workflows", themes: [T04, T37]}
+  - {id: C05, suggested_label: "Analytical methods and CDS", themes: [T09, T35]}
+  - {id: C06, suggested_label: "Chromatography, NMR and spectroscopy data", themes: [T05, T39, T19]}
+  - {id: C07, suggested_label: "Flow cytometry and cell-based data", themes: [T38, T45]}
+  - {id: C08, suggested_label: "Ontologies and semantic modelling", themes: [T03, T13, T23, T31, T30, T41, T18]}
+  - {id: C09, suggested_label: "FAIR data, identifiers and registries", themes: [T25, T42, T14]}
+  - {id: C10, suggested_label: "Data archiving, ELN and data lakes", themes: [T11, T40]}
+  - {id: C11, suggested_label: "Regulatory, CMC, IDMP and USP", themes: [T28, T32, T33, T21]}
+  - {id: C12, suggested_label: "Process manufacturing (ISA-88/95)", themes: [T12, T34, T43]}
+  - {id: C13, suggested_label: "OPC UA / LADS connectivity", themes: [T22]}
+  - {id: C14, suggested_label: "AI, LLMs and agents", themes: [T20, T27]}
+  - {id: C15, suggested_label: "AI-assisted modelling (NLP/ML for ontologies)", themes: [T15, T24]}
+  - {id: C16, suggested_label: "Releases, working groups and governance", themes: [T17, T10]}
+  - {id: C17, suggested_label: "Drug discovery and pharma context", themes: [T08]}
+unassigned_themes:
+  T01: "community, members, meetings: describes how people talk, not what a talk is about"
+  T26: "'ecosystem', 'technology', 'problems': generic framing language, not a topic"

@@ -279,3 +279,41 @@ def pd_series(d):
     import pandas as pd
 
     return pd.Series(d)
+
+
+@llm_app.command("taxonomy-proposal")
+def taxonomy_proposal(mapping: str = typer.Option("configs/topics/taxonomy_categories_v1.yaml"),
+                      out: str = typer.Option(None, help="default: data/analysis/discover/taxonomy_proposed.yaml")):
+    """Write the reviewer-fill taxonomy (17 categories, every key you must set is null). The original draft is never modified."""
+    from sqlalchemy import select as sel
+
+    from ytscribe.analysis.llm.taxonomy import build_proposal
+    from ytscribe.db.models import Video
+
+    cfg = load_topics()
+    d = get_settings().data_dir / "analysis" / "discover"
+    target = Path(out) if out else d / "taxonomy_proposed.yaml"
+    with get_session() as session:
+        titles = {v.id: v.title or "" for v in session.scalars(sel(Video))}
+    res = build_proposal(mapping, d / "taxonomy_draft.yaml", d / "passage_topics.csv", titles, target, cfg.season_labels)
+    console.print(f"wrote {target}: {res['categories']} categories, {res['unassigned']} unassigned themes, {res['nulls']} keys for you to fill",
+                  markup=False)
+
+
+@llm_app.command("taxonomy-check")
+def taxonomy_check(path: str = typer.Argument(...)):
+    """List the keys still null in a taxonomy file, or load it if it is complete and approved."""
+    import yaml
+
+    from ytscribe.analysis.llm import taxonomy as tx
+
+    raw = yaml.safe_load(Path(path).read_text())
+    todo = tx.missing_keys(raw) if "categories" in raw else []
+    if todo:
+        console.print(f"{len(todo)} keys still null: {', '.join(todo)}", markup=False)
+        return
+    try:
+        t = tx.load_taxonomy(path)
+        console.print(f"OK: approved, {len(t.topics)} categories kept, {len(t.anchors)} anchors", markup=False)
+    except (tx.TaxonomyNotApproved, tx.TaxonomyIncomplete, ValueError) as e:
+        console.print(f"not ready: {e}", markup=False)
